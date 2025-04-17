@@ -1,10 +1,16 @@
-import os
-import re
 import requests
 import datetime
 from bs4 import BeautifulSoup
 from pytz import timezone
 import openai
+import os
+
+# 🔍 여기 추가!
+print("🔑 OPENAI API KEY (확인용):", os.getenv("OPENAI_API_KEY"))
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+
 
 # ▼ OpenAI API 키 불러오기
 openai.api_key = os.getenv("OPENAI_API_KEY")
