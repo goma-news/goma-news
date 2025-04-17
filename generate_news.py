@@ -1,8 +1,16 @@
+import os
 import requests
 import datetime
 from bs4 import BeautifulSoup
 from pytz import timezone
 import openai
+
+# ▼ OpenAI API 키 불러오기
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
+    print("❌ OpenAI API 키가 로딩되지 않았습니다.")
+else:
+    print("✅ OpenAI API 키가 로딩되었습니다.")
 
 # ▼ 한국 시간 기준 현재 시각
 kst = timezone("Asia/Seoul")
@@ -10,8 +18,8 @@ now = datetime.datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
 # ▼ 키워드 리스트 (영문 기준)
 keywords = [
-    "futures", "nasdaq", "gold", "powell", "CPI", "PPI", "FOMC",
-    "jobs", "unemployment", "trump", "fed", "rate", "GDP", "nvidia",
+    "futures", "Nasdaq", "Gold", "Powell", "CPI", "PPI", "FOMC",
+    "jobs", "unemployment", "Trump", "Fed", "rate", "GDP", "Nvidia",
     "ISM", "confidence", "NQ", "XAUUSD"
 ]
 
@@ -26,22 +34,22 @@ news_data = []
 for rss_url in rss_feeds:
     try:
         response = requests.get(rss_url)
-        soup     = BeautifulSoup(response.content, features="xml")
-        items    = soup.findAll("item")
+        soup = BeautifulSoup(response.content, features="xml")
+        items = soup.findAll("item")
     except Exception:
         continue
 
     for item in items:
-        title       = item.title.text.strip()
-        link        = item.link.text.strip()
-        pub_date    = item.pubDate.text if item.pubDate else "Unknown"
+        title = item.title.text.strip()
+        link = item.link.text.strip()
+        pub_date = item.pubDate.text if item.pubDate else "Unknown"
         description = item.description.text.strip() if item.description else ""
 
         if not any(k.lower() in title.lower() for k in keywords):
             continue
 
         try:
-            pub_dt     = datetime.datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %Z")
+            pub_dt = datetime.datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %Z")
             pub_dt_kst = pub_dt.astimezone(kst).strftime("%Y-%m-%d %H:%M")
         except Exception:
             pub_dt_kst = "알 수 없음"
@@ -49,36 +57,43 @@ for rss_url in rss_feeds:
         prompt = (
             f"뉴스 제목: {title}\n"
             f"본문 요약: {description}\n\n"
-            "다음을 한국어로 번역해줘:\n"
-            "1. 뉴스 제목\n2. 뉴스 본문\n그리고 이 뉴스가 해외선물과 관련 있다면 핵심만 요약해줘. 관련 없으면 '핵심 없음'이라고 해줘."
+            "1) 위 제목과 본문을 한국어로 자연스럽게 **번역**해줘.\n"
+            "2) 이 뉴스가 **해외선물**과 관련된 내용이면, 핵심만 한 문장으로 **요약**해주고, 관련이 없다면 '핵심 없음'이라고 답해줘."
         )
 
         try:
             completion = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "당신은 금융 뉴스 번역 및 요약 전문가입니다."},
+                    {"role": "system", "content": "당신은 금융 뉴스 번역·요약 전문가입니다."},
                     {"role": "user", "content": prompt}
                 ]
             )
-            result = completion.choices[0].message.content.strip()
+            full_response = completion.choices[0].message.content.strip()
+            lines = full_response.split("\n")
 
-            translated, summary = "", "요약 불가"
-            if "요약:" in result:
-                parts = result.split("요약:")
-                translated = parts[0].replace("번역:", "").strip()
-                summary = parts[1].strip()
-            else:
-                translated = result
-        except Exception:
+            translated = ""
+            summary = "요약 불가"
+
+            for line in lines:
+                if "번역:" in line:
+                    translated = line.replace("번역:", "").strip()
+                elif "요약:" in line:
+                    summary = line.replace("요약:", "").strip()
+
+            if not translated:
+                translated = title
+
+        except Exception as e:
+            print(f"❌ GPT 오류: {e}")
             translated = title
             summary = "요약 불가"
 
         news_data.append({
-            "title":   translated,
+            "title": translated,
             "summary": summary,
-            "time":    pub_dt_kst,
-            "link":    link
+            "time": pub_dt_kst,
+            "link": link
         })
 
 html = f"""<!DOCTYPE html>
