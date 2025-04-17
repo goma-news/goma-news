@@ -7,10 +7,6 @@ import openai
 
 # ▼ OpenAI API 키 불러오기
 openai.api_key = os.getenv("OPENAI_API_KEY")
-if not openai.api_key:
-    print("❌ OpenAI API 키가 로딩되지 않았습니다.")
-else:
-    print("✅ OpenAI API 키가 로딩되었습니다.")
 
 # ▼ 한국 시간 기준 현재 시각
 kst = timezone("Asia/Seoul")
@@ -57,8 +53,8 @@ for rss_url in rss_feeds:
         prompt = (
             f"뉴스 제목: {title}\n"
             f"본문 요약: {description}\n\n"
-            "1) 위 제목과 본문을 한국어로 자연스럽게 **번역**해줘.\n"
-            "2) 이 뉴스가 **해외선물**과 관련된 내용이면, 핵심만 한 문장으로 **요약**해주고, 관련이 없다면 '핵심 없음'이라고 답해줘."
+            "1) 위 제목과 본문을 한국어로 자연스럽게 번역해줘.\n"
+            "2) 이 뉴스가 해외선물과 관련된 내용이면, 핵심만 한 문장으로 요약해주고, 관련이 없다면 '핵심 없음'이라고 답해줘."
         )
 
         try:
@@ -69,23 +65,23 @@ for rss_url in rss_feeds:
                     {"role": "user", "content": prompt}
                 ]
             )
-            full_response = completion.choices[0].message.content.strip()
-            lines = full_response.split("\n")
+            content = completion.choices[0].message.content.strip()
 
+            # 안전한 파싱 방식
             translated = ""
             summary = "요약 불가"
 
-            for line in lines:
+            for line in content.splitlines():
                 if "번역:" in line:
-                    translated = line.replace("번역:", "").strip()
+                    translated = line.split("번역:")[1].strip()
                 elif "요약:" in line:
-                    summary = line.replace("요약:", "").strip()
+                    summary = line.split("요약:")[1].strip()
 
             if not translated:
                 translated = title
 
         except Exception as e:
-            print(f"❌ GPT 오류: {e}")
+            print(f"GPT 오류: {e}")
             translated = title
             summary = "요약 불가"
 
