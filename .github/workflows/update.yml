@@ -12,9 +12,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:  # ✅ OpenAI API 키 연결
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
     steps:
       - name: 저장소 체크아웃
         uses: actions/checkout@v3
+        with:
+          persist-credentials: true
 
       - name: Python 설치
         uses: actions/setup-python@v4
@@ -28,8 +33,6 @@ jobs:
 
       - name: 뉴스 HTML 생성
         run: python generate_news.py
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: 변경사항 커밋 및 푸시
         run: |
