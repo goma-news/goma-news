@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from pytz import timezone
 import openai
 
-# ▼ 한국 시간 기준
+# ▼ 한국 시간 기준 현재 시각
 kst = timezone("Asia/Seoul")
 now = datetime.datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
@@ -15,7 +15,7 @@ keywords = [
     "ism", "consumer confidence", "xauusd", "nq"
 ]
 
-# ▼ 수집할 RSS 피드 주소 (통합)
+# ▼ RSS 피드 주소 목록
 rss_feeds = [
     "https://www.marketwatch.com/rss/topstories",
     "https://www.forexlive.com/feed/"
@@ -26,80 +26,91 @@ news_data = []
 for rss_url in rss_feeds:
     try:
         response = requests.get(rss_url)
-        soup = BeautifulSoup(response.content, features="xml")
-        items = soup.findAll("item")
-    except Exception as e:
+        soup     = BeautifulSoup(response.content, features="xml")
+        items    = soup.findAll("item")
+    except Exception:
+        # 해당 피드에 문제가 있으면 무시하고 다음 피드로 넘어감
         continue
 
     for item in items:
-        title = item.title.text.strip()
-        link = item.link.text.strip()
-        pub_date = item.pubDate.text if item.pubDate else "Unknown"
+        title       = item.title.text.strip()
+        link        = item.link.text.strip()
+        pub_date    = item.pubDate.text if item.pubDate else "Unknown"
         description = item.description.text.strip() if item.description else ""
 
-        # 키워드 포함 여부 (영문 소문자 비교)
-        title_lower = title.lower()
-        if not any(k in title_lower for k in keywords):
+        # 제목에 키워드가 하나라도 포함되지 않으면 건너뜀
+        if not any(k in title for k in keywords):
             continue
 
-        # 발표 시간 처리
+        # pubDate(GMT) → KST 변환
         try:
-            pub_dt = datetime.datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %Z")
+            pub_dt     = datetime.datetime.strptime(
+                pub_date, "%a, %d %b %Y %H:%M:%S %Z"
+            )
             pub_dt_kst = pub_dt.astimezone(kst).strftime("%Y-%m-%d %H:%M")
         except Exception:
             pub_dt_kst = "알 수 없음"
 
-        # GPT 요약
+        # GPT-4에 보낼 프롬프트
         prompt = (
             f"뉴스 제목: {title}\n"
-            f"내용 요약: {description}\n"
-            f"위 뉴스가 해외선물과 관련 있다면, 핵심 내용을 한국어로 간단하게 한 문장으로 요약해줘. "
-            f"관련이 없으면 '요약 불가'라고 답해줘."
+            f"본문 요약: {description}\n\n"
+            "1) 위 제목과 본문을 한국어로 자연스럽게 **번역**해줘.\n"
+            "2) 이 뉴스가 **해외선물**과 관련된 내용이면, 핵심만 한 문장으로 **요약**해주고, "
+            "관련이 없다면 “핵심 없음”이라고 답해줘."
         )
 
+        # OpenAI API 호출
         try:
             completion = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "당신은 금융 뉴스 요약 전문가입니다."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": "당신은 금융 뉴스 번역·요약 전문가입니다."},
+                    {"role": "user",   "content": prompt}
                 ]
             )
-            summary = completion.choices[0].message.content.strip()
+            # 응답을 두 줄(번역, 요약)로 나눠 파싱
+            lines      = completion.choices[0].message.content.strip().split("\n")
+            translated = lines[0].replace("번역:", "").strip()
+            summary    = lines[1].replace("요약:", "").strip()
         except Exception:
-            summary = "요약 불가"
+            # 오류 시 원제목 사용, 요약 불가 처리
+            translated = title
+            summary    = "요약 불가"
 
         news_data.append({
-            "title": title,
+            "title":   translated,
             "summary": summary,
-            "time": pub_dt_kst,
-            "link": link
+            "time":    pub_dt_kst,
+            "link":    link
         })
 
-# ▼ HTML 생성
+# ▼ HTML 조립
 html = f"""<!DOCTYPE html>
 <html>
-<head><meta charset=\"utf-8\"><title>GOMA 실시간 뉴스</title></head>
-<body style=\"font-family:sans-serif; padding:20px;\">
-<h1>실시간 해외선물 뉴스</h1>
-<p>최종 업데이트: {now} (KST)</p>
-<ul>
+<head>
+  <meta charset="utf-8">
+  <title>GOMA 실시간 해외선물 뉴스</title>
+</head>
+<body style="font-family:sans-serif; padding:20px;">
+  <h1>실시간 해외선물 뉴스</h1>
+  <p>최종 업데이트: {now} (KST)</p>
+  <ul>
 """
 
 if news_data:
     for news in news_data:
-        html += f"""<li>
-        <strong>{news['title']}</strong><br>
-        요약: {news['summary']}<br>
-        발표 시간: {news['time']}<br>
-        <a href=\"{news['link']}\" target=\"_blank\">[원문 보기]</a><br><br>
-        </li>
-        """
+        html += f"""    <li>
+      <strong>{news['title']}</strong><br>
+      요약: {news['summary']}<br>
+      발표 시간: {news['time']}<br>
+      <a href="{news['link']}" target="_blank">[원문 보기]</a><br><br>
+    </li>
+"""
 else:
-    html += "<li>현재 시간 기준으로 새롭게 수집된 뉴스가 없습니다.</li>"
+    html += "    <li>현재 시간 기준으로 새롭게 수집된 뉴스가 없습니다.</li>\n"
 
-html += """
-</ul>
+html += """  </ul>
 </body>
 </html>
 """
