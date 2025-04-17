@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from pytz import timezone
 import openai
 
-# ▼ 한국 시간 기준 현재 시각
+# — 한국 시간 기준 현재 시각
 kst = timezone("Asia/Seoul")
 now = datetime.datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
@@ -15,7 +15,7 @@ keywords = [
     "ism", "consumer confidence", "xauusd", "nq"
 ]
 
-# ▼ RSS 피드 주소 목록
+# — RSS 피드 목록
 rss_feeds = [
     "https://www.marketwatch.com/rss/topstories",
     "https://www.forexlive.com/feed/"
@@ -28,8 +28,7 @@ for rss_url in rss_feeds:
         response = requests.get(rss_url)
         soup     = BeautifulSoup(response.content, features="xml")
         items    = soup.findAll("item")
-    except Exception:
-        # 해당 피드에 문제가 있으면 무시하고 다음 피드로 넘어감
+    except:
         continue
 
     for item in items:
@@ -38,29 +37,27 @@ for rss_url in rss_feeds:
         pub_date    = item.pubDate.text if item.pubDate else "Unknown"
         description = item.description.text.strip() if item.description else ""
 
-        # 제목에 키워드가 하나라도 포함되지 않으면 건너뜀
         if not any(k in title for k in keywords):
             continue
 
-        # pubDate(GMT) → KST 변환
+        # 발행시간 GMT→KST
         try:
             pub_dt     = datetime.datetime.strptime(
                 pub_date, "%a, %d %b %Y %H:%M:%S %Z"
             )
             pub_dt_kst = pub_dt.astimezone(kst).strftime("%Y-%m-%d %H:%M")
-        except Exception:
+        except:
             pub_dt_kst = "알 수 없음"
 
-        # GPT-4에 보낼 프롬프트
+        # GPT용 프롬프트: 항상 번역 + 조건부 요약
         prompt = (
             f"뉴스 제목: {title}\n"
             f"본문 요약: {description}\n\n"
             "1) 위 제목과 본문을 한국어로 자연스럽게 **번역**해줘.\n"
-            "2) 이 뉴스가 **해외선물**과 관련된 내용이면, 핵심만 한 문장으로 **요약**해주고, "
-            "관련이 없다면 “핵심 없음”이라고 답해줘."
+            "2) 이 뉴스가 **해외선물**과 관련된 내용이면, "
+            "핵심만 한 문장으로 **요약**해주고, 관련이 없다면 “핵심 없음”이라고 답해줘."
         )
 
-        # OpenAI API 호출
         try:
             completion = openai.ChatCompletion.create(
                 model="gpt-4",
@@ -69,12 +66,10 @@ for rss_url in rss_feeds:
                     {"role": "user",   "content": prompt}
                 ]
             )
-            # 응답을 두 줄(번역, 요약)로 나눠 파싱
             lines      = completion.choices[0].message.content.strip().split("\n")
             translated = lines[0].replace("번역:", "").strip()
             summary    = lines[1].replace("요약:", "").strip()
-        except Exception:
-            # 오류 시 원제목 사용, 요약 불가 처리
+        except:
             translated = title
             summary    = "요약 불가"
 
@@ -85,7 +80,7 @@ for rss_url in rss_feeds:
             "link":    link
         })
 
-# ▼ HTML 조립
+# — HTML 조립
 html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -115,6 +110,6 @@ html += """  </ul>
 </html>
 """
 
-# ▼ 파일 저장
+# — 파일 저장
 with open("goma_news_live_updated.html", "w", encoding="utf-8") as f:
     f.write(html)
