@@ -2,7 +2,7 @@ name: Auto Update News
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 매 30분마다
+    - cron: '*/30 * * * *'  # 매 30분마다 실행
   workflow_dispatch:
 
 jobs:
