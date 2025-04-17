@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 * * * *'  # 30분마다 실행
   workflow_dispatch:
 
 jobs:
@@ -27,7 +27,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # 혹은: pip install requests beautifulsoup4 pytz
 
       - name: 뉴스 HTML 생성
         run: python generate_news.py
@@ -38,4 +37,4 @@ jobs:
           git config --local user.email "bot@goma.com"
           git add goma_news_live_updated.html
           git commit -m "자동 업데이트: 뉴스 갱신" || echo "No changes to commit"
-          git push origin HEAD:main
+          git push
