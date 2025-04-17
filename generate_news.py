@@ -10,9 +10,9 @@ now = datetime.datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
 # ▼ 키워드 리스트 (영문 기준)
 keywords = [
-    "futures", "nasdaq", "gold", "powell", "CPI", "PPI", "FOMC",
-    "jobs", "unemployment", "trump", "fed", "rate", "GDP", "nvidia",
-    "ISM", "consumer confidence", "NQ", "XAUUSD"
+    "futures", "nasdaq", "gold", "powell", "cpi", "ppi", "fomc",
+    "jobs", "unemployment", "trump", "fed", "rate", "gdp", "nvidia",
+    "ism", "confidence", "xauusd", "nq"
 ]
 
 # ▼ RSS 피드 주소 목록
@@ -26,77 +26,54 @@ news_data = []
 for rss_url in rss_feeds:
     try:
         response = requests.get(rss_url)
-        soup     = BeautifulSoup(response.content, features="xml")
-        items    = soup.findAll("item")
+        soup = BeautifulSoup(response.content, features="xml")
+        items = soup.findAll("item")
     except Exception:
         continue
 
     for item in items:
-        title       = item.title.text.strip()
-        link        = item.link.text.strip()
-        pub_date    = item.pubDate.text if item.pubDate else "Unknown"
+        title = item.title.text.strip()
+        link = item.link.text.strip()
+        pub_date = item.pubDate.text if item.pubDate else "Unknown"
         description = item.description.text.strip() if item.description else ""
 
         if not any(k.lower() in title.lower() for k in keywords):
             continue
 
         try:
-            pub_dt     = datetime.datetime.strptime(
+            pub_dt = datetime.datetime.strptime(
                 pub_date, "%a, %d %b %Y %H:%M:%S %Z"
             )
             pub_dt_kst = pub_dt.astimezone(kst).strftime("%Y-%m-%d %H:%M")
         except Exception:
             pub_dt_kst = "알 수 없음"
 
-        # GPT 프롬프트 구성
         prompt = (
             f"뉴스 제목: {title}\n"
-            f"본문 요약: {description}\n\n"
-            "응답은 반드시 아래 형식으로:\n"
-            "번역: ~\n"
-            "요약: ~\n"
-            "\n"
-            "1) 위 제목과 본문을 한국어로 자연스럽게 **번역**해줘.\n"
-            "2) 이 뉴스가 **해외선물**과 관련된 내용이면, 핵심만 한 문장으로 **요약**해주고, 관련이 없다면 '핵심 없음'이라고 답해줘."
+            f"본문 내용: {description}\n"
+            "이 뉴스의 내용을 한국어로 자연스럽게 번역해줘. 그리고 해외선물 관련 뉴스라면 핵심 요약도 한국어로 한 문장으로 정리해줘."
         )
 
         try:
             completion = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "당신은 금융 뉴스 번역·요약 전문가입니다."},
-                    {"role": "user",   "content": prompt}
+                    {"role": "system", "content": "너는 금융 뉴스 전문 번역가이며 요약 전문가야."},
+                    {"role": "user", "content": prompt}
                 ]
             )
             full_response = completion.choices[0].message.content.strip()
-
-            # 디버그용 응답 출력
-            print("GPT 응답 확인 ▼▼▼")
-            print(full_response)
-            print("▲▲▲ GPT 응답 끝")
-
-            lines = full_response.split("\n")
-            translated = ""
-            summary = "요약 불가"
-
-            for line in lines:
-                if "번역:" in line:
-                    translated = line.replace("번역:", "").strip()
-                elif "요약:" in line:
-                    summary = line.replace("요약:", "").strip()
-
-            if not translated:
-                translated = title
-
+            translated = full_response.split("요약:")[0].replace("번역:", "").strip()
+            summary = full_response.split("요약:")[1].strip() if "요약:" in full_response else "요약 불가"
         except Exception:
             translated = title
             summary = "요약 불가"
 
         news_data.append({
-            "title":   translated,
+            "title": translated,
             "summary": summary,
-            "time":    pub_dt_kst,
-            "link":    link
+            "time": pub_dt_kst,
+            "link": link
         })
 
 html = f"""<!DOCTYPE html>
@@ -130,4 +107,3 @@ html += """  </ul>
 
 with open("goma_news_live_updated.html", "w", encoding="utf-8") as f:
     f.write(html)
-
