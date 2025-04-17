@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 * * * *'  # 30분마다 실행
   workflow_dispatch:
 
 jobs:
@@ -15,13 +15,14 @@ jobs:
     steps:
       - name: 저장소 체크아웃
         uses: actions/checkout@v3
-        with:
-          persist-credentials: true
 
       - name: Python 설치
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+
+      - name: 의존성 설치
+        run: pip install requests
 
       - name: 뉴스 HTML 생성
         run: python generate_news.py
@@ -32,5 +33,4 @@ jobs:
           git config --local user.email "bot@goma.com"
           git add goma_news_live_updated.html
           git commit -m "자동 업데이트: 뉴스 갱신" || echo "No changes to commit"
-          git push origin HEAD:main
-
+          git push
