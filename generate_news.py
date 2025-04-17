@@ -10,9 +10,9 @@ now = datetime.datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
 # ▼ 키워드 리스트 (영문 기준)
 keywords = [
-    "futures", "nasdaq", "gold", "powell", "CPI", "PPI", "FOMC",
-    "employment", "unemployment", "trump", "fed", "rate", "GDP", "nvidia",
-    "ISM", "confidence", "NQ", "XAUUSD"
+    "nasdaq", "gold", "futures", "powell", "cpi", "ppi", "fomc",
+    "employment", "jobless", "trump", "fed", "rate", "gdp", "nvidia",
+    "ism", "confidence", "nq", "xauusd"
 ]
 
 # ▼ RSS 피드 주소 목록
@@ -65,19 +65,21 @@ for rss_url in rss_feeds:
                 ]
             )
             full_response = completion.choices[0].message.content.strip()
-            lines = full_response.split("\n")
 
-            translated = ""
+            translated = title
             summary = "요약 불가"
 
-            for line in lines:
-                if "번역:" in line:
-                    translated = line.replace("번역:", "").strip()
-                elif "요약:" in line:
-                    summary = line.replace("요약:", "").strip()
-
-            if not translated:
-                translated = title
+            if "번역:" in full_response and "요약:" in full_response:
+                for line in full_response.split("\n"):
+                    if "번역:" in line:
+                        translated = line.split("번역:")[1].strip()
+                    elif "요약:" in line:
+                        summary = line.split("요약:")[1].strip()
+            else:
+                parts = full_response.split("요약:")
+                if len(parts) == 2:
+                    translated = parts[0].replace("번역:", "").strip()
+                    summary = parts[1].strip()
 
         except Exception:
             translated = title
