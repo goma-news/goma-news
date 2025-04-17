@@ -2,7 +2,7 @@ name: Auto Update News
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # 매 30분마다 실행
+    - cron: '*/30 * * * *' # 매 30분마다
   workflow_dispatch:
 
 jobs:
@@ -19,14 +19,15 @@ jobs:
           python-version: '3.11'
 
       - name: HTML 자동 생성
-        run: python generate_news.py
+        run: |
+          python generate_news.py
 
       - name: 커밋 및 푸시
         env:
           TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
-          git config --global user.name 'goma-news'
-          git config --global user.email 'bot@goma.com'
+          git config --global user.name "goma-news"
+          git config --global user.email "bot@goma.com"
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/goma-news/goma-news.git
           git add goma_news_live_updated.html
           git commit -m "자동 업데이트: 뉴스 갱신" || echo "No changes to commit"
