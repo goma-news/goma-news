@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import datetime
 from bs4 import BeautifulSoup
@@ -67,18 +68,20 @@ for rss_url in rss_feeds:
             )
             content = completion.choices[0].message.content.strip()
 
-            # 안전한 파싱 방식
-            translated = ""
+            print("GPT 응답 원문 ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
+            print(content)
+            print("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
+
+            translated = title
             summary = "요약 불가"
 
-            for line in content.splitlines():
-                if "번역:" in line:
-                    translated = line.split("번역:")[1].strip()
-                elif "요약:" in line:
-                    summary = line.split("요약:")[1].strip()
+            match_trans = re.search(r"번역[:\]\s*(.+)", content)
+            match_sum = re.search(r"요약[:\]\s*(.+)", content)
 
-            if not translated:
-                translated = title
+            if match_trans:
+                translated = match_trans.group(1).strip()
+            if match_sum:
+                summary = match_sum.group(1).strip()
 
         except Exception as e:
             print(f"GPT 오류: {e}")
