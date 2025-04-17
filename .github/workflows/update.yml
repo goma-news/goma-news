@@ -1,11 +1,11 @@
 name: Auto Update News
 
 permissions:
-  contents: write  # 자동 커밋/푸시 권한
+  contents: write
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # 30분마다 실행
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: 저장소 체크아웃
         uses: actions/checkout@v3
+        with:
+          persist-credentials: true
 
       - name: Python 설치
         uses: actions/setup-python@v4
@@ -30,5 +32,5 @@ jobs:
           git config --local user.email "bot@goma.com"
           git add goma_news_live_updated.html
           git commit -m "자동 업데이트: 뉴스 갱신" || echo "No changes to commit"
-          git push
+          git push origin HEAD:main
 
