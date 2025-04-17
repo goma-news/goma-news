@@ -2,13 +2,12 @@ name: Auto Update News
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 30분마다 실행
+    - cron: '*/30 * * * *'  # 매 30분마다 실행
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: 저장소 체크아웃
         uses: actions/checkout@v3
