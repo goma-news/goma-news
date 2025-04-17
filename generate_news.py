@@ -8,17 +8,17 @@ import openai
 kst = timezone("Asia/Seoul")
 now = datetime.datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
-# ▼ 키워드 리스트 (필요시 추가 가능)
+# ▼ 키워드 리스트 (영문 기반)
 keywords = [
-    "해외선물", "나스닥", "금 선물", "파월", "CPI", "PPI", "FOMC",
-    "미국 고용", "실업률", "트럼프", "연준", "금리", "GDP", "엔비디아",
-    "ISM", "소비자신뢰지수", "NQ", "XAUUSD"
+    "nasdaq", "gold", "fed", "powell", "fomc", "cpi", "ppi", "gdp",
+    "us jobs", "unemployment", "trump", "interest rate", "nvidia",
+    "ism", "consumer confidence", "xauusd", "nq"
 ]
 
 # ▼ 수집할 RSS 피드 주소 (통합)
 rss_feeds = [
-    "https://www.marketwatch.com/rss/topstories",            # MarketWatch
-    "https://www.forexlive.com/feed/"                        # ForexLive
+    "https://www.marketwatch.com/rss/topstories",
+    "https://www.forexlive.com/feed/"
 ]
 
 news_data = []
@@ -29,7 +29,7 @@ for rss_url in rss_feeds:
         soup = BeautifulSoup(response.content, features="xml")
         items = soup.findAll("item")
     except Exception as e:
-        continue  # 해당 피드 실패 시 다음 피드로 넘어감
+        continue
 
     for item in items:
         title = item.title.text.strip()
@@ -37,8 +37,9 @@ for rss_url in rss_feeds:
         pub_date = item.pubDate.text if item.pubDate else "Unknown"
         description = item.description.text.strip() if item.description else ""
 
-        # 키워드 포함 여부
-        if not any(k in title for k in keywords):
+        # 키워드 포함 여부 (영문 소문자 비교)
+        title_lower = title.lower()
+        if not any(k in title_lower for k in keywords):
             continue
 
         # 발표 시간 처리
@@ -78,8 +79,8 @@ for rss_url in rss_feeds:
 # ▼ HTML 생성
 html = f"""<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>GOMA 실시간 뉴스</title></head>
-<body style="font-family:sans-serif; padding:20px;">
+<head><meta charset=\"utf-8\"><title>GOMA 실시간 뉴스</title></head>
+<body style=\"font-family:sans-serif; padding:20px;\">
 <h1>실시간 해외선물 뉴스</h1>
 <p>최종 업데이트: {now} (KST)</p>
 <ul>
@@ -91,7 +92,7 @@ if news_data:
         <strong>{news['title']}</strong><br>
         요약: {news['summary']}<br>
         발표 시간: {news['time']}<br>
-        <a href="{news['link']}" target="_blank">[원문 보기]</a><br><br>
+        <a href=\"{news['link']}\" target=\"_blank\">[원문 보기]</a><br><br>
         </li>
         """
 else:
