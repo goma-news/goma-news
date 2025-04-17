@@ -28,7 +28,7 @@ jobs:
       run: |
         git config --global user.name "goma-news"
         git config --global user.email "bot@goma.com"
-        git remote set-url origin https://goma-news:${TOKEN}@github.com/goma-news/goma-news.git
+        git remote set-url origin https://${{ secrets.PERSONAL_TOKEN }}@github.com/goma-news/goma-news.git
         git add goma_news_live_updated.html
         git commit -m "자동 업데이트: 뉴스 갱신" || echo "No changes to commit"
         git push origin main
