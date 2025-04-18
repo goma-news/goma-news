@@ -122,6 +122,7 @@ html = f"""<!DOCTYPE html>
   <header>
     <h1>실시간 해외선물 뉴스</h1>
     <p>최종 업데이트: {now} (KST)</p>
+    <p style="font-size:0.9em; color:#555;">최신뉴스: F5를 눌러 새로고침 (30분마다 자동 업데이트)</p>
   </header>
   <div class=\"news-container\">  
     <ul>
