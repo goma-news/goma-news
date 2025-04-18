@@ -1,3 +1,4 @@
+```python
 import os
 import re
 import requests
@@ -56,7 +57,7 @@ for rss_url in rss_feeds:
         except Exception:
             pub_time = "알 수 없음"
 
-        # GPT-3.5-turbo 호출 프롬프트
+        # GPT-4 호출 프롬프트
         prompt = (
             f"뉴스 제목: {title}\n"
             f"본문 요약: {desc}\n\n"
@@ -67,7 +68,7 @@ for rss_url in rss_feeds:
 
         try:
             completion = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[
                     {"role": "system", "content": "당신은 금융 뉴스 번역·요약 전문가입니다."},
                     {"role": "user",   "content": prompt}
@@ -126,3 +127,4 @@ html += """
 # ── 파일 저장 ──
 with open("goma_news_live_updated.html", "w", encoding="utf-8") as f:
     f.write(html)
+```
