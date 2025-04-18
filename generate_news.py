@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import requests
 import datetime
 from bs4 import BeautifulSoup
@@ -28,7 +29,16 @@ rss_feeds = [
     "https://www.forexlive.com/feed/"
 ]
 
+# ── 이전에 처리한 뉴스 저장 파일 ──
+processed_file = 'processed.json'
+try:
+    with open(processed_file, 'r', encoding='utf-8') as pf:
+        processed_urls = json.load(pf)
+except Exception:
+    processed_urls = []
+
 news_data = []
+new_processed = []
 
 # ── 뉴스 수집 및 요약 ──
 for rss_url in rss_feeds:
@@ -36,14 +46,16 @@ for rss_url in rss_feeds:
         resp = requests.get(rss_url)
         soup = BeautifulSoup(resp.content, 'xml')
         items = soup.find_all('item')
-    except:
+    except Exception:
         continue
 
     for item in items:
         title = item.title.text.strip()
         link = item.link.text.strip()
-        pub_date = item.pubDate.text if item.pubDate else ''
+        if link in processed_urls:
+            continue  # 이미 처리된 뉴스 건너뜀
 
+        pub_date = item.pubDate.text if item.pubDate else ''
         # 본문 내용 추출 (Forexlive용 content:encoded 우선)
         content_tag = item.find('content:encoded')
         desc_tag = item.find('description')
@@ -62,35 +74,34 @@ for rss_url in rss_feeds:
         try:
             dt = datetime.datetime.strptime(pub_date, '%a, %d %b %Y %H:%M:%S %Z')
             pub_time = dt.astimezone(kst).strftime('%Y-%m-%d %H:%M')
-        except:
+        except Exception:
             pub_time = '알 수 없음'
 
-        # GPT 호출용 프롬프트
+        # GPT-3.5-turbo 호출 프롬프트 구성
         body_text = desc if desc else '본문 없음'
         prompt = (
             f"뉴스 제목: {title}\n"
             f"본문 요약: {body_text}\n\n"
             "1) 위 제목과 본문을 한국어로 자연스럽게 번역해 주세요.\n"
-            "2) 해외선물 관련이면 핵심만 한 문장으로 요약, 아니면 '핵심 없음'이라고 답해 주세요."
+            "2) 해외선물 관련이면 핵심만 한 문장으로 요약하고, 아니면 '핵심 없음'이라고 답해주세요."
         )
 
         try:
             response = openai.ChatCompletion.create(
-                model='gpt-4',
+                model='gpt-3.5-turbo',
                 messages=[
                     {'role': 'system', 'content': '금융 뉴스 번역·요약 전문가입니다.'},
                     {'role': 'user', 'content': prompt}
                 ],
-                temperature=0.3,
-                max_tokens=200
+                temperature=0.0,
+                max_tokens=100
             )
             result = response.choices[0].message.content.strip()
             lines = [ln.strip() for ln in result.split('\n') if ln.strip()]
-
             # 숫자 접두사 제거
             translated = re.sub(r'^\d+\)\s*', '', lines[0])
             summary = lines[1] if len(lines) > 1 else '핵심 없음'
-        except:
+        except Exception:
             translated = title
             summary = '요약 불가'
 
@@ -100,6 +111,12 @@ for rss_url in rss_feeds:
             'time': pub_time,
             'link': link
         })
+        new_processed.append(link)
+
+# ── 처리 완료된 링크 저장 ──
+processed_urls.extend(new_processed)
+with open(processed_file, 'w', encoding='utf-8') as pf:
+    json.dump(processed_urls, pf, ensure_ascii=False, indent=2)
 
 # ── HTML 생성 및 저장 ──
 html = f"""<!DOCTYPE html>
@@ -122,7 +139,7 @@ html = f"""<!DOCTYPE html>
   <header>
     <h1>실시간 해외선물 뉴스</h1>
     <p>최종 업데이트: {now} (KST)</p>
-    <p style="font-size:0.9em; color:#555;">최신뉴스: F5를 눌러 새로고침 (30분마다 자동 업데이트)</p>
+    <p style=\"font-size:0.9em; color:#555;\">최신뉴스: F5를 눌러 새로고침 (30분마다 자동 업데이트)</p>
   </header>
   <div class=\"news-container\">  
     <ul>
@@ -141,5 +158,6 @@ html += """
 </body>
 </html>
 """
+
 with open('goma_news_live_updated.html', 'w', encoding='utf-8') as f:
     f.write(html)
