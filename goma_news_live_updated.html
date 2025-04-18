@@ -1,11 +1,38 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>GOMA 실시간 해외선물 뉴스</title></head>
-<body style="font-family:sans-serif; padding:20px;">
-<h1>실시간 해외선물 뉴스</h1>
-<p>최종 업데이트: 2025-04-18 12:53 (KST)</p>
-<ul>
-<li>
+<head>
+  <meta charset="utf-8">
+  <title>GOMA 실시간 해외선물 뉴스</title>
+  <style>
+    /* 전체 페이지에서 브라우저 스크롤 제거 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    /* 헤더 영역 고정 */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    /* 뉴스 리스트 컨테이너: 헤더 바로 아래부터 바닥까지 스크롤 */
+    .news-container {
+      position: absolute;
+      top: 100px;      /* header 높이(20px 패딩 + h1 + p)만큼 조정 */
+      bottom: 0;
+      left: 0; right: 0;
+      padding: 20px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
 <strong>1) 제목: 국채 시장이 신호를 보내고 있다. 주식 투자자들은 이를 인지하지 못하고 있다.</strong><br>
 요약: 본문 요약: 워렌 버핏과 제프 건들라흐 같은 똑똑한 플레이어들이 무엇을 하고 있는지 주목하라.<br>
 발표 시간: 2025-04-18 09:35<br>
