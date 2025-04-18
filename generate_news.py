@@ -44,9 +44,9 @@ for rss_url in rss_feeds:
         link = item.link.text.strip()
         pub_date = item.pubDate.text if item.pubDate else ''
 
-        # 본문 내용 가져오기 (Forexlive용 content:encoded 우선)
-        desc_tag = item.find('description')
+        # 본문 내용 추출 (Forexlive용 content:encoded 우선)
         content_tag = item.find('content:encoded')
+        desc_tag = item.find('description')
         if content_tag and content_tag.text.strip():
             desc = content_tag.text.strip()
         elif desc_tag and desc_tag.text.strip():
@@ -58,14 +58,14 @@ for rss_url in rss_feeds:
         if not any(k in title.lower() for k in keywords):
             continue
 
-        # 발행 시간 변환 (GMT->KST)
+        # 발행 시간 변환 (GMT→KST)
         try:
             dt = datetime.datetime.strptime(pub_date, '%a, %d %b %Y %H:%M:%S %Z')
             pub_time = dt.astimezone(kst).strftime('%Y-%m-%d %H:%M')
         except:
             pub_time = '알 수 없음'
 
-        # GPT-4 호출 프롬프트 구성
+        # GPT 호출용 프롬프트
         body_text = desc if desc else '본문 없음'
         prompt = (
             f"뉴스 제목: {title}\n"
@@ -105,31 +105,17 @@ for rss_url in rss_feeds:
 html = f"""<!DOCTYPE html>
 <html>
 <head>
-  <meta charset=\"utf-8\">
+  <meta charset=\"utf-8\"/>
   <title>GOMA 실시간 해외선물 뉴스</title>
   <style>
-    /* 전체 페이지 스크롤 활성화 */
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: auto;
-      font-family: sans-serif;
-    }
-    /* 헤더 */
-    header {
-      background: #fff;
-      padding: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    /* 뉴스 리스트 */
-    .news-container {
-      padding: 20px;
-    }
-    ul { list-style: disc inside; margin: 0; padding: 0; }
-    li { margin-bottom: 20px; }
-    strong { display: block; margin-bottom: 5px; }
-    a { color: #4a90e2; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    html, body {{ margin:0; padding:0; overflow:auto; font-family:sans-serif; }}
+    header {{ background:#fff; padding:20px; box-shadow:0 2px 4px rgba(0,0,0,0.1); }}
+    .news-container {{ padding:20px; }}
+    ul {{ list-style:disc inside; margin:0; padding:0; }}
+    li {{ margin-bottom:20px; }}
+    strong {{ display:block; margin-bottom:5px; }}
+    a {{ color:#4a90e2; text-decoration:none; }}
+    a:hover {{ text-decoration:underline; }}
   </style>
 </head>
 <body>
@@ -154,8 +140,5 @@ html += """
 </body>
 </html>
 """
-
-# 파일로 쓰기
 with open('goma_news_live_updated.html', 'w', encoding='utf-8') as f:
     f.write(html)
-
