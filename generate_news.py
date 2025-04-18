@@ -77,7 +77,7 @@ for rss_url in rss_feeds:
         except Exception:
             pub_time = '알 수 없음'
 
-        # GPT-3.5-turbo 호출 프롬프트 구성
+        # GPT-4 호출 프롬프트 구성
         body_text = desc if desc else '본문 없음'
         prompt = (
             f"뉴스 제목: {title}\n"
@@ -88,7 +88,7 @@ for rss_url in rss_feeds:
 
         try:
             response = openai.ChatCompletion.create(
-                model='gpt-3.5-turbo',
+                model='gpt-4',
                 messages=[
                     {'role': 'system', 'content': '금융 뉴스 번역·요약 전문가입니다.'},
                     {'role': 'user', 'content': prompt}
@@ -98,6 +98,7 @@ for rss_url in rss_feeds:
             )
             result = response.choices[0].message.content.strip()
             lines = [ln.strip() for ln in result.split('\n') if ln.strip()]
+
             # 숫자 접두사 제거
             translated = re.sub(r'^\d+\)\s*', '', lines[0])
             summary = lines[1] if len(lines) > 1 else '핵심 없음'
