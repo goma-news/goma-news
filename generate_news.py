@@ -108,20 +108,22 @@ html = f"""<!DOCTYPE html>
   <meta charset=\"utf-8\">
   <title>GOMA 실시간 해외선물 뉴스</title>
   <style>
+    /* 전체 페이지 스크롤 활성화 */
     html, body {
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 0;
       overflow: auto;
       font-family: sans-serif;
     }
+    /* 헤더 */
     header {
       background: #fff;
       padding: 20px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      position: static;
     }
+    /* 뉴스 리스트 */
     .news-container {
       padding: 20px;
-      overflow: visible;
     }
     ul { list-style: disc inside; margin: 0; padding: 0; }
     li { margin-bottom: 20px; }
@@ -152,5 +154,8 @@ html += """
 </body>
 </html>
 """
+
+# 파일로 쓰기
 with open('goma_news_live_updated.html', 'w', encoding='utf-8') as f:
     f.write(html)
+
