@@ -1,4 +1,3 @@
-```python
 import os
 import re
 import requests
@@ -127,4 +126,4 @@ html += """
 # ── 파일 저장 ──
 with open("goma_news_live_updated.html", "w", encoding="utf-8") as f:
     f.write(html)
-```
+
