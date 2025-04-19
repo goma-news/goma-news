@@ -94,7 +94,7 @@ for rss_url in rss_feeds:
                     {'role': 'user', 'content': prompt}
                 ],
                 temperature=0.0,
-                max_tokens=100
+                max_tokens=60
             )
             result = response.choices[0].message.content.strip()
             lines = [ln.strip() for ln in result.split('\n') if ln.strip()]
