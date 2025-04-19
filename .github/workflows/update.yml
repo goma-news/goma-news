@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # 30분마다 실행
+     - cron: '0 * * * *'     # 매시간 정각에 실행
   workflow_dispatch:
 
 jobs:
