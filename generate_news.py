@@ -68,13 +68,13 @@ for source, rss_url in rss_feeds:
         )
         try:
             ai_resp = openai.ChatCompletion.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system",  "content": "당신은 금융 뉴스 번역 전문가입니다."},
                     {"role": "user",    "content": prompt}
                 ],
                 temperature=0.0,
-                max_tokens=60
+                max_tokens=50
             )
             result = ai_resp.choices[0].message.content.strip()
             translated = re.sub(r"^\d+\)\s*", "", result)
